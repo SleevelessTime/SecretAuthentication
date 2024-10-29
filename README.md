@@ -1,2 +1,2 @@
 # SecretAuthentication
-bu uygulama sayesinde istenmeyen insanlar bilgisayarımızın ilk şifresini bilse bile ikinci kimlik doğrulaması sayesinde bilgisayarımıza erişleri olmayacak
+bu uygulama sayesinde istenmeyen kullanıcılar bilgisayarımızın ilk şifresini bilse bile ikinci gizli kimlik doğrulaması sayesinde bilgisayarımıza erişimleri olmayacak.
