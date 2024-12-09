@@ -1,6 +1,6 @@
 import os
-import signal
 import subprocess
+import psutil  # PID kontrolü için kullanıyoruz
 
 PROCESS_FILE = "background_script.py"
 PID_FILE = "background_pid.txt"
@@ -21,11 +21,7 @@ def start_background_process():
 
 def is_pid_running(pid):
     """PID'nin geçerli bir sürece ait olup olmadığını kontrol eder."""
-    try:
-        os.kill(pid, 0)  # Sürecin var olup olmadığını kontrol eder
-        return True
-    except OSError:
-        return False
+    return psutil.pid_exists(pid)
 
 def stop_background_process():
     if not os.path.exists(PID_FILE):
@@ -49,10 +45,16 @@ def stop_background_process():
 
     # Süreci durdur
     try:
-        os.kill(pid, signal.SIGTERM)
+        process = psutil.Process(pid)
+        process.terminate()  # Süreci düzgün bir şekilde sonlandır
+        process.wait(timeout=5)  # Sürecin kapanmasını bekle
         print(f"PID {pid} durduruldu.")
-    except OSError as e:
-        print(f"Süreç sonlandırılamadı: {e}")
+    except psutil.NoSuchProcess:
+        print("Süreç bulunamadı. Zaten sonlanmış.")
+    except psutil.AccessDenied:
+        print("Süreç sonlandırılamadı: Yetki reddedildi.")
+    except psutil.TimeoutExpired:
+        print("Süreç zamanında sonlandırılamadı.")
     finally:
         # PID dosyasını sil
         if os.path.exists(PID_FILE):
@@ -66,7 +68,7 @@ if __name__ == "__main__":
         elif command == "stop":
             stop_background_process()
         elif command == "exit":
-            print("Kontrol uygulamasından çıkılıyor.")
+            print("Kontrol uygulamasından çıkılıyor. Arka plan süreci etkilenmedi.")
             break
         else:
             print("Geçersiz komut.")
