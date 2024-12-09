@@ -1,11 +1,37 @@
 import os
 import subprocess
 import psutil
+import ctypes
 
 PROCESS_FILE = "background_script.py"
 PID_FILE = "background_pid.txt"
+MAX_ATTEMPTS = 3
+
+def sleep_computer():
+    """Bilgisayarı uyku moduna alır."""
+    ctypes.windll.kernel32.SetThreadExecutionState(0x80000000)  # Sleep mode
+
+def secure_stop_process():
+    """Şifre ile süreci durdurma işlemi."""
+    password = "your_secret_password"  # Güvenli şifrenizi buraya girin
+    attempts = 0
+
+    while attempts < MAX_ATTEMPTS:
+        user_input = input("Enter password to stop process: ")
+        
+        if user_input == password:
+            print("Password correct! Stopping process.")
+            stop_background_process()
+            return  # Süreç durdurulacak
+        else:
+            attempts += 1
+            print(f"Incorrect password! {MAX_ATTEMPTS - attempts} attempts left.")
+    
+    print("Too many incorrect attempts! Putting the computer to sleep.")
+    sleep_computer()
 
 def start_background_process():
+    """Arka plan sürecini başlatır."""
     if os.path.exists(PID_FILE):
         with open(PID_FILE, "r") as pid_file:
             try:
@@ -37,6 +63,7 @@ def is_pid_running(pid):
         return False
 
 def stop_background_process():
+    """Arka plan sürecini durdurur."""
     if not os.path.exists(PID_FILE):
         print("Arka planda çalışan süreç bulunamadı.")
         return
@@ -73,7 +100,7 @@ if __name__ == "__main__":
         if command == "start":
             start_background_process()
         elif command == "stop":
-            stop_background_process()
+            secure_stop_process()  # Şifreli durdurma
         elif command == "exit":
             print("Kontrol uygulamasından çıkılıyor. Arka plan süreci etkilenmedi.")
             break
